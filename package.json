@@ -1,0 +1,46 @@
+{
+  "name": "wazuh-shared-brain",
+  "version": "1.0.0",
+  "description": "Graph-based shared brain and control room for Wazuh versions and plugins",
+  "type": "module",
+  "bin": {
+    "wazuh-brain": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "compile": "tsx src/cli/index.ts compile",
+    "serve": "tsx src/cli/index.ts serve",
+    "mcp": "tsx src/cli/index.ts mcp",
+    "dev:ui": "vite"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.0",
+    "better-sqlite3": "^11.8.1",
+    "commander": "^13.1.0",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^0.475.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-force-graph-2d": "^1.26.0",
+    "react-force-graph-3d": "^1.26.0",
+    "three": "^0.174.0",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@types/three": "^0.174.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.7"
+  }
+}
