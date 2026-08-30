@@ -36,3 +36,8 @@ pnpm-debug.log*
 # Test coverage
 coverage/
 .nyc_output/
+
+# Local agent artifacts & skills
+.agents/
+.claude/
+skills-lock.json
