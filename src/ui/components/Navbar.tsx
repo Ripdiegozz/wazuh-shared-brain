@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Layers, Box, Cpu, ShieldAlert, BookOpen } from 'lucide-react';
+import { Search, Layers, Box, Cpu, ShieldAlert, BookOpen, Sparkles } from 'lucide-react';
 import type { BrainVersion, BrainPlugin } from '../types.js';
 
 interface NavbarProps {
@@ -30,6 +30,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSearchChange,
   stats,
 }) => {
+  const currentVersionObj = versions.find((v) => v.id === selectedVersion);
+  const isPrerelease = Boolean(currentVersionObj?.is_prerelease);
+  const channel = currentVersionObj?.channel ?? 'stable';
+
   return (
     <header className="h-14 border-b border-border bg-surface flex items-center justify-between px-4 select-none shrink-0 z-30">
       {/* Left: Brand & Status */}
@@ -42,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Version Switcher */}
-        <div className="flex items-center gap-1.5 pl-3 border-l border-border">
+        <div className="flex items-center gap-2 pl-3 border-l border-border">
           <Layers className="w-3.5 h-3.5 text-ink-tertiary" />
           <select
             value={selectedVersion}
@@ -51,10 +55,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             {versions.map((v) => (
               <option key={v.id} value={v.id}>
-                {v.name}
+                {v.name} {v.is_prerelease ? `[${(v.channel ?? 'beta').toUpperCase()}]` : ''}
               </option>
             ))}
           </select>
+
+          {/* Active Channel Badge */}
+          {isPrerelease && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase font-semibold">
+              <Sparkles className="w-2.5 h-2.5" />
+              {channel}
+            </span>
+          )}
         </div>
 
         {/* Plugin Toggles */}

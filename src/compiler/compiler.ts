@@ -14,6 +14,7 @@ import {
   type Node,
   type Connection,
   type PluginManifest,
+  type VersionChannel,
 } from '../core/schema.js';
 
 export interface CompileOptions {
@@ -28,6 +29,37 @@ export interface CompileResult {
   doctrineCount: number;
   nodesCount: number;
   edgesCount: number;
+}
+
+function parseVersionMetadata(versionId: string): {
+  name: string;
+  baseVersion: string | null;
+  channel: VersionChannel;
+  isPrerelease: number;
+} {
+  const match = versionId.match(/^(.+?)-(beta\d*|rc\d*|alpha\d*)$/i);
+  if (match && match[1] && match[2]) {
+    const rawChannel = match[2].toLowerCase();
+    const channel: VersionChannel = rawChannel.startsWith('beta')
+      ? 'beta'
+      : rawChannel.startsWith('rc')
+      ? 'rc'
+      : 'alpha';
+
+    return {
+      name: `Wazuh ${versionId}`,
+      baseVersion: match[1],
+      channel,
+      isPrerelease: 1,
+    };
+  }
+
+  return {
+    name: `Wazuh ${versionId}`,
+    baseVersion: null,
+    channel: 'stable',
+    isPrerelease: 0,
+  };
 }
 
 export async function compileBrain(options: CompileOptions = {}): Promise<CompileResult> {
@@ -54,7 +86,7 @@ export async function compileBrain(options: CompileOptions = {}): Promise<Compil
     db.prepare('DELETE FROM fts_search').run();
 
     const insertVersion = db.prepare(
-      'INSERT INTO versions (id, name, base_version) VALUES (?, ?, ?)'
+      'INSERT INTO versions (id, name, base_version, channel, is_prerelease) VALUES (?, ?, ?, ?, ?)'
     );
     const insertPlugin = db.prepare(
       'INSERT INTO plugins (id, name, version, description, wazuh_versions) VALUES (?, ?, ?, ?, ?)'
@@ -85,7 +117,8 @@ export async function compileBrain(options: CompileOptions = {}): Promise<Compil
         const versionId = dirent.name;
         const versionPath = path.join(versionsDir, versionId);
 
-        insertVersion.run(versionId, `Wazuh ${versionId}`, null);
+        const meta = parseVersionMetadata(versionId);
+        insertVersion.run(versionId, meta.name, meta.baseVersion, meta.channel, meta.isPrerelease);
         versionsCount++;
 
         // Process Rules

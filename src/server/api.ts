@@ -36,7 +36,7 @@ export function createServer(options: ServerOptions = {}): AppServer {
 
     // 1. GET /api/versions
     if (pathname === '/api/versions') {
-      const versions = db.prepare('SELECT id, name, base_version FROM versions').all();
+      const versions = db.prepare('SELECT id, name, base_version, channel, is_prerelease FROM versions').all();
       const plugins = db.prepare('SELECT id, name, version, description, wazuh_versions FROM plugins').all();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ versions, plugins }));

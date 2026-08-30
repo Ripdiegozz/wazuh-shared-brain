@@ -1,0 +1,6 @@
+connections:
+  - from: "remoted"
+    to: "analysisd-v2"
+    type: "INVOKES"
+    weight: "CRITICAL"
+    description: "Routes encrypted agent payloads to experimental beta engine"

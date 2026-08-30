@@ -49,6 +49,8 @@ export interface BrainVersion {
   id: string;
   name: string;
   base_version?: string;
+  channel?: 'stable' | 'beta' | 'rc' | 'alpha';
+  is_prerelease?: number | boolean;
 }
 
 export interface BrainPlugin {

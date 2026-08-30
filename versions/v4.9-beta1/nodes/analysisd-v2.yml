@@ -1,0 +1,6 @@
+id: "analysisd-v2"
+type: "daemon"
+label: "Analysis Engine (Beta v2)"
+package: "wazuh-core-beta"
+file_path: "src/analysisd_v2/main.c"
+description: "Experimental multi-threaded analysis engine"

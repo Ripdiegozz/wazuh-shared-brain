@@ -10,14 +10,14 @@ export interface ToolDefinition {
 export const tools: ToolDefinition[] = [
   {
     name: 'brain_list_versions',
-    description: 'Lists all available Wazuh base versions and installed plugins in the shared brain.',
+    description: 'Lists all available Wazuh base/beta versions and installed plugins in the shared brain.',
     parameters: z.object({}),
   },
   {
     name: 'brain_get_rules',
     description: 'Returns concise rule summaries (ID, severity, category, title) for a Wazuh version/plugin without bloating context with full bodies.',
     parameters: z.object({
-      version: z.string().optional().describe('Wazuh version (e.g. v4.8, v4.9)'),
+      version: z.string().optional().describe('Wazuh version (e.g. v4.8, v4.9, v4.9-beta1)'),
       plugin_id: z.string().optional().describe('Optional plugin ID filter'),
       category: z.string().optional().describe('Optional category filter'),
       severity: z.enum(['HARD', 'WARN', 'TIP']).optional().describe('Optional severity filter'),
@@ -27,14 +27,14 @@ export const tools: ToolDefinition[] = [
     name: 'brain_get_rule_detail',
     description: 'Fetches the full specification, rationale, origin, and overrides for a specific rule ID.',
     parameters: z.object({
-      rule_id: z.string().describe('Rule ID (e.g. WZ-01, TI-01)'),
+      rule_id: z.string().describe('Rule ID (e.g. WZ-01, TI-01, WZ-BETA-01)'),
     }),
   },
   {
     name: 'brain_get_doctrine',
     description: 'Fetches active architectural decisions, legal invariants, and design directives.',
     parameters: z.object({
-      version: z.string().optional().describe('Wazuh version filter (e.g. v4.8)'),
+      version: z.string().optional().describe('Wazuh version filter (e.g. v4.8, v4.9-beta1)'),
       status: z.enum(['ACTIVE', 'SUPERSEDED', 'DEPRECATED']).optional().describe('Doctrine status (default ACTIVE)'),
       topic: z.string().optional().describe('Optional topic keyword filter'),
     }),
@@ -44,7 +44,7 @@ export const tools: ToolDefinition[] = [
     description: 'Explores direct 1-depth inbound and outbound dependencies/connections for a given node without dumping the whole graph.',
     parameters: z.object({
       node_id: z.string().describe('Target node identifier (e.g. analysisd, remoted, threat-intel)'),
-      version: z.string().optional().describe('Wazuh version scope (e.g. v4.8)'),
+      version: z.string().optional().describe('Wazuh version scope (e.g. v4.8, v4.9-beta1)'),
       depth: z.number().optional().default(1).describe('Exploration depth (default 1)'),
     }),
   },
@@ -53,7 +53,7 @@ export const tools: ToolDefinition[] = [
     description: 'Discovers which architectural nodes, rules, and doctrine policies apply to a specific file or component.',
     parameters: z.object({
       component_or_file: z.string().describe('Component ID (e.g. analysisd) or file path (e.g. src/analysisd/main.c)'),
-      version: z.string().optional().describe('Wazuh version scope (e.g. v4.8)'),
+      version: z.string().optional().describe('Wazuh version scope (e.g. v4.8, v4.9-beta1)'),
     }),
   },
 ];
@@ -61,7 +61,7 @@ export const tools: ToolDefinition[] = [
 export function executeTool(db: Database.Database, toolName: string, args: Record<string, unknown>): unknown {
   switch (toolName) {
     case 'brain_list_versions': {
-      const versions = db.prepare('SELECT id, name, base_version FROM versions').all();
+      const versions = db.prepare('SELECT id, name, base_version, channel, is_prerelease FROM versions').all();
       const plugins = db.prepare('SELECT id, name, version, description, wazuh_versions FROM plugins').all();
       return { versions, plugins };
     }
@@ -145,10 +145,9 @@ export function executeTool(db: Database.Database, toolName: string, args: Recor
       const outParams: string[] = [nodeId];
 
       if (version) {
+        queryParamHelper(version, inParams, outParams);
         inQuery += ' AND (version_id = ? OR version_id = \'\' OR plugin_id != \'\')';
         outQuery += ' AND (version_id = ? OR version_id = \'\' OR plugin_id != \'\')';
-        inParams.push(version);
-        outParams.push(version);
       }
 
       const inbound = db.prepare(inQuery).all(...inParams);
@@ -192,4 +191,9 @@ export function executeTool(db: Database.Database, toolName: string, args: Recor
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
+}
+
+function queryParamHelper(version: string, inParams: string[], outParams: string[]): void {
+  inParams.push(version);
+  outParams.push(version);
 }

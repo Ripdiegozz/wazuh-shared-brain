@@ -18,6 +18,14 @@ interface DoctrineRow {
   body: string;
 }
 
+interface VersionRow {
+  id: string;
+  name: string;
+  base_version: string | null;
+  channel: string;
+  is_prerelease: number;
+}
+
 describe('Brain Compiler Engine', () => {
   const testDbPath = '.cache/test-brain.sqlite';
 
@@ -31,13 +39,20 @@ describe('Brain Compiler Engine', () => {
 
   it('compiles versions and plugins into SQLite database with FTS5 search', async () => {
     const result = await compileBrain({ dbPath: testDbPath, rootDir: process.cwd() });
-    expect(result.versionsCount).toBeGreaterThanOrEqual(2);
-    expect(result.rulesCount).toBeGreaterThanOrEqual(3);
-    expect(result.nodesCount).toBeGreaterThanOrEqual(5);
-    expect(result.edgesCount).toBeGreaterThanOrEqual(4);
+    expect(result.versionsCount).toBeGreaterThanOrEqual(3);
+    expect(result.rulesCount).toBeGreaterThanOrEqual(4);
+    expect(result.nodesCount).toBeGreaterThanOrEqual(6);
+    expect(result.edgesCount).toBeGreaterThanOrEqual(5);
 
     const db = openDatabase(testDbPath);
     
+    // Check version channels and beta detection
+    const betaVersion = db.prepare('SELECT * FROM versions WHERE id = ?').get('v4.9-beta1') as VersionRow;
+    expect(betaVersion).toBeDefined();
+    expect(betaVersion.channel).toBe('beta');
+    expect(betaVersion.is_prerelease).toBe(1);
+    expect(betaVersion.base_version).toBe('v4.9');
+
     // Check rules table
     const rules = db.prepare('SELECT * FROM rules WHERE id = ?').all('WZ-01') as RuleRow[];
     expect(rules.length).toBe(1);

@@ -21,7 +21,9 @@ export function initSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS versions (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      base_version TEXT
+      base_version TEXT,
+      channel TEXT NOT NULL DEFAULT 'stable',
+      is_prerelease INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS plugins (
