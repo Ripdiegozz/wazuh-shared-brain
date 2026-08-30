@@ -6,6 +6,7 @@ import { openDatabase } from '../compiler/db.js';
 import { createServer } from '../server/api.js';
 import { startMcpServer } from '../mcp/server.js';
 import { executeTool } from '../mcp/tools.js';
+import { ingestWazuhPlugins } from '../ingest/ingestor.js';
 
 const program = new Command();
 
@@ -31,6 +32,38 @@ program
       console.log(`  - Edges:    ${result.edgesCount}`);
     } catch (err: unknown) {
       console.error('Compilation failed:', err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('ingest')
+  .description('Universal auto-discovery and ingestion of Wazuh Dashboard plugins from local directories or GitHub')
+  .option('-d, --dir <path>', 'Local directory to scan for Wazuh plugins')
+  .option('-r, --remote', 'Fetch plugin manifests directly from GitHub')
+  .option('--org <name>', 'GitHub organization (default: wazuh)', 'wazuh')
+  .option('--repos <list>', 'Comma-separated list of repository names to ingest')
+  .option('--token <token>', 'GitHub personal access token for higher rate limits')
+  .action(async (opts: { dir?: string; remote?: boolean; org?: string; repos?: string; token?: string }) => {
+    try {
+      console.log('Running Universal Wazuh Ingestion Engine...');
+      const repos = opts.repos ? opts.repos.split(',').map((r) => r.trim()) : undefined;
+      const summary = await ingestWazuhPlugins({
+        localDir: opts.dir,
+        remote: opts.remote,
+        githubOrg: opts.org,
+        repositories: repos,
+        githubToken: opts.token,
+      });
+
+      console.log(`✓ Ingestion complete:`);
+      console.log(`  - Plugins discovered:     ${summary.pluginsDiscovered}`);
+      console.log(`  - Versions detected:       ${summary.versionsDetected.join(', ') || 'N/A'}`);
+      console.log(`  - Nodes generated:         ${summary.nodesGenerated}`);
+      console.log(`  - Connections generated:   ${summary.connectionsGenerated}`);
+      console.log(`  - Brain database:          Auto-compiled to .cache/brain.sqlite`);
+    } catch (err: unknown) {
+      console.error('Ingestion failed:', err instanceof Error ? err.message : String(err));
       process.exit(1);
     }
   });
