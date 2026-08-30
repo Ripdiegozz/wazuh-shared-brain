@@ -16,22 +16,12 @@ const IGNORED_DIRS = new Set([
   'test',
   'tests',
   'fixtures',
+  'packages', // Internal shared libraries (osd-i18n, osd-utils, etc.)
+  'scripts',
+  'developer_examples',
+  'examples',
+  'src/dev',
 ]);
-
-const IGNORED_PACKAGES = [
-  'eslint-config',
-  'babel-preset',
-  'prettier-config',
-  'stylelint-config',
-  'safer-lodash',
-  'antlr-grammar',
-  'osd-dev-utils',
-  'osd-eslint',
-  'osd-test',
-  'osd-cross-platform',
-  'osd-i18n',
-  'osd-config',
-];
 
 export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredPlugin[] {
   const discovered: DiscoveredPlugin[] = [];
@@ -51,9 +41,12 @@ export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredP
       return;
     }
 
-    const hasOsdJson = entries.some((e) => e.isFile() && (e.name === 'opensearch_dashboards.json' || e.name === 'kibana.json'));
+    const hasOsdJson = entries.some(
+      (e) => e.isFile() && (e.name === 'opensearch_dashboards.json' || e.name === 'kibana.json')
+    );
     const hasPkgJson = entries.some((e) => e.isFile() && e.name === 'package.json');
 
+    // Only inspect directories that have a genuine plugin manifest or wazuh plugin config
     if (hasOsdJson || hasPkgJson) {
       const plugin = parsePluginDirectory(currentDir, hasOsdJson, hasPkgJson);
       if (plugin) {
@@ -64,7 +57,17 @@ export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredP
     // Recurse into subdirectories
     for (const entry of entries) {
       if (entry.isDirectory() && !IGNORED_DIRS.has(entry.name)) {
-        crawl(path.join(currentDir, entry.name), currentDepth + 1);
+        // Skip path if it is inside packages or developer_examples
+        const subPath = path.join(currentDir, entry.name);
+        const normalized = subPath.replace(/\\/g, '/');
+        if (
+          normalized.includes('/packages/') ||
+          normalized.includes('/developer_examples') ||
+          normalized.includes('/examples/')
+        ) {
+          continue;
+        }
+        crawl(subPath, currentDepth + 1);
       }
     }
   }
@@ -78,6 +81,16 @@ function parsePluginDirectory(
   hasOsdJson: boolean,
   hasPkgJson: boolean
 ): DiscoveredPlugin | null {
+  const normalizedPath = pluginDir.replace(/\\/g, '/');
+  // Discard internal shared libraries and developer examples
+  if (
+    normalizedPath.includes('/packages/') ||
+    normalizedPath.includes('/developer_examples') ||
+    normalizedPath.includes('/examples/')
+  ) {
+    return null;
+  }
+
   let id = path.basename(pluginDir);
   let name = id;
   let version = '1.0.0';
@@ -88,7 +101,7 @@ function parsePluginDirectory(
   const optionalPlugins: string[] = [];
   let server = false;
   let ui = false;
-  let isIgnoredDevPackage = false;
+  let isRealPlugin = false;
 
   // 1. Read opensearch_dashboards.json / kibana.json if present
   if (hasOsdJson) {
@@ -99,7 +112,11 @@ function parsePluginDirectory(
     try {
       const raw = fs.readFileSync(osdPath, 'utf-8');
       const json = JSON.parse(raw) as Record<string, unknown>;
-      if (typeof json['id'] === 'string') id = json['id'];
+      if (typeof json['id'] === 'string') {
+        id = json['id'];
+        name = json['id'];
+        isRealPlugin = true;
+      }
       if (typeof json['version'] === 'string') version = json['version'];
       if (typeof json['opensearchDashboardsVersion'] === 'string') {
         opensearchDashboardsVersion = json['opensearchDashboardsVersion'];
@@ -128,27 +145,9 @@ function parsePluginDirectory(
       const raw = fs.readFileSync(pkgPath, 'utf-8');
       const json = JSON.parse(raw) as Record<string, unknown>;
 
-      if (typeof json['name'] === 'string') {
-        name = json['name'];
-        if (!hasOsdJson) {
-          id = json['name'];
-        }
-      }
-
-      // Check if this is an internal tooling / dev utility package
-      const pkgNameLower = name.toLowerCase();
-      if (
-        !hasOsdJson &&
-        !json['wazuh'] &&
-        IGNORED_PACKAGES.some((ign) => pkgNameLower.includes(ign))
-      ) {
-        isIgnoredDevPackage = true;
-      }
-
-      if (typeof json['version'] === 'string' && !hasOsdJson) version = json['version'];
-      if (typeof json['description'] === 'string') description = json['description'];
-
+      // If package has an explicit "wazuh" block or opensearchDashboards config, it's a real plugin
       if (json['wazuh'] && typeof json['wazuh'] === 'object') {
+        isRealPlugin = true;
         const wazuhObj = json['wazuh'] as Record<string, unknown>;
         if (typeof wazuhObj['version'] === 'string') {
           wazuhVersion = wazuhObj['version'];
@@ -156,21 +155,46 @@ function parsePluginDirectory(
       }
 
       if (json['opensearchDashboards'] && typeof json['opensearchDashboards'] === 'object') {
+        isRealPlugin = true;
         const osdObj = json['opensearchDashboards'] as Record<string, unknown>;
         if (typeof osdObj['version'] === 'string') {
           opensearchDashboardsVersion = osdObj['version'];
         }
       }
+
+      // If it has no plugin manifest and no wazuh/opensearchDashboards block, it is just a plain library
+      if (!hasOsdJson && !isRealPlugin) {
+        return null;
+      }
+
+      if (typeof json['name'] === 'string') {
+        name = json['name'];
+        if (!hasOsdJson) {
+          id = json['name'];
+        }
+      }
+      if (typeof json['version'] === 'string' && !hasOsdJson) version = json['version'];
+      if (typeof json['description'] === 'string') description = json['description'];
     } catch {
       // ignore parse errors
     }
   }
 
-  if (isIgnoredDevPackage) {
+  if (!isRealPlugin) {
     return null;
   }
 
-  // Deduplicate and sanitize ID
+  // Ignore npm utility scopes (@elastic/..., @osd/..., @babel/...) unless explicitly a wazuh plugin
+  if (
+    id.startsWith('@elastic/') ||
+    id.startsWith('@osd/') ||
+    id.startsWith('@opensearch/') ||
+    id.startsWith('-osd-') ||
+    id.startsWith('-elastic-')
+  ) {
+    return null;
+  }
+
   const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
 
   return {
