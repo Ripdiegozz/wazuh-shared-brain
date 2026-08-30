@@ -1,0 +1,6 @@
+id: "wazuh-engine-beta2"
+type: "daemon"
+label: "Wazuh Engine (Beta 2)"
+package: "wazuh-engine-beta2"
+file_path: "src/engine/src/main.rs"
+description: "High-throughput gRPC streaming analysis engine with SIMD acceleration"

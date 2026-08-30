@@ -1,0 +1,6 @@
+id: "wazuh-manager"
+type: "daemon"
+label: "Wazuh Manager"
+package: "wazuh-manager"
+file_path: "src/manager/main.c"
+description: "Cluster coordinator, agent registration, and secure channel daemon"

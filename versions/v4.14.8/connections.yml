@@ -1,0 +1,6 @@
+connections:
+  - from: "remoted"
+    to: "analysisd"
+    type: "INVOKES"
+    weight: "CRITICAL"
+    description: "Forwards encrypted agent log payloads to analysis queue"

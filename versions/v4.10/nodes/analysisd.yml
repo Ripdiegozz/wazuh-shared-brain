@@ -1,0 +1,6 @@
+id: "analysisd"
+type: "daemon"
+label: "Analysis Engine"
+package: "wazuh-core"
+file_path: "src/analysisd/main.c"
+description: "Core analysis daemon evaluating alerts against rulesets"

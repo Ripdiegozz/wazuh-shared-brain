@@ -1,0 +1,6 @@
+id: "wazuh-dashboard"
+type: "daemon"
+label: "Wazuh Dashboard Server"
+package: "wazuh-dashboard"
+file_path: "src/core/server/root/index.ts"
+description: "Next-gen web user interface and plugin host server"

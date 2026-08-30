@@ -1,0 +1,6 @@
+id: "wazuh-indexer"
+type: "daemon"
+label: "Wazuh Indexer"
+package: "wazuh-indexer"
+file_path: "server/src/main.java"
+description: "Distributed search and analytics storage cluster"

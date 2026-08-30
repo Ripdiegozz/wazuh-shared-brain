@@ -1,0 +1,6 @@
+id: "remoted"
+type: "daemon"
+label: "Remote Daemon"
+package: "wazuh-core"
+file_path: "src/remoted/main.c"
+description: "Handles agent key exchange, encryption, and socket forwarding"

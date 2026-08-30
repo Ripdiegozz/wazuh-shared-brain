@@ -1,0 +1,6 @@
+id: "wazuh-engine"
+type: "daemon"
+label: "Wazuh Engine (Rust v2)"
+package: "wazuh-engine"
+file_path: "src/engine/src/main.rs"
+description: "Next-gen vectorized rule matching and alert generation engine"

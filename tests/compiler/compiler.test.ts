@@ -47,11 +47,11 @@ describe('Brain Compiler Engine', () => {
     const db = openDatabase(testDbPath);
     
     // Check version channels and beta detection
-    const betaVersion = db.prepare('SELECT * FROM versions WHERE id = ?').get('v4.9-beta1') as VersionRow;
+    const betaVersion = db.prepare('SELECT * FROM versions WHERE id = ?').get('v5.0.0-beta2') as VersionRow;
     expect(betaVersion).toBeDefined();
     expect(betaVersion.channel).toBe('beta');
     expect(betaVersion.is_prerelease).toBe(1);
-    expect(betaVersion.base_version).toBe('v4.9');
+    expect(betaVersion.base_version).toBe('v5.0.0');
 
     // Check rules table
     const rules = db.prepare('SELECT * FROM rules WHERE id = ?').all('WZ-01') as RuleRow[];
