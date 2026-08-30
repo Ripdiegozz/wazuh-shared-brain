@@ -1,0 +1,6 @@
+id: "wazuh-engine-501"
+type: "daemon"
+label: "Wazuh Engine (v5.0.1)"
+package: "wazuh-engine"
+file_path: "src/engine/src/main.rs"
+description: "Next-gen Rust analysis engine with optimized vectorized matcher"

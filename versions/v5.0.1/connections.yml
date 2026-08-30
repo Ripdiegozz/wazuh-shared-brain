@@ -1,0 +1,6 @@
+connections:
+  - from: "wazuh-manager"
+    to: "wazuh-engine-501"
+    type: "INVOKES"
+    weight: "CRITICAL"
+    description: "Streams WCS event batches to Rust engine"

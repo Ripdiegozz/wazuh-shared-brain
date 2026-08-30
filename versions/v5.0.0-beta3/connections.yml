@@ -1,6 +1,6 @@
 connections:
   - from: "wazuh-manager"
-    to: "wazuh-engine-beta2"
+    to: "wazuh-engine-beta3"
     type: "INVOKES"
     weight: "CRITICAL"
     description: "Streams high-volume event batches via gRPC bidirectional channel"
