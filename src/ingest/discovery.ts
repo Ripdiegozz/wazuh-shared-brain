@@ -12,7 +12,26 @@ const IGNORED_DIRS = new Set([
   'coverage',
   '.vscode',
   '.idea',
+  'cypress',
+  'test',
+  'tests',
+  'fixtures',
 ]);
+
+const IGNORED_PACKAGES = [
+  'eslint-config',
+  'babel-preset',
+  'prettier-config',
+  'stylelint-config',
+  'safer-lodash',
+  'antlr-grammar',
+  'osd-dev-utils',
+  'osd-eslint',
+  'osd-test',
+  'osd-cross-platform',
+  'osd-i18n',
+  'osd-config',
+];
 
 export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredPlugin[] {
   const discovered: DiscoveredPlugin[] = [];
@@ -32,7 +51,6 @@ export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredP
       return;
     }
 
-    // Check if current directory contains a plugin manifest
     const hasOsdJson = entries.some((e) => e.isFile() && (e.name === 'opensearch_dashboards.json' || e.name === 'kibana.json'));
     const hasPkgJson = entries.some((e) => e.isFile() && e.name === 'package.json');
 
@@ -70,6 +88,7 @@ function parsePluginDirectory(
   const optionalPlugins: string[] = [];
   let server = false;
   let ui = false;
+  let isIgnoredDevPackage = false;
 
   // 1. Read opensearch_dashboards.json / kibana.json if present
   if (hasOsdJson) {
@@ -115,6 +134,17 @@ function parsePluginDirectory(
           id = json['name'];
         }
       }
+
+      // Check if this is an internal tooling / dev utility package
+      const pkgNameLower = name.toLowerCase();
+      if (
+        !hasOsdJson &&
+        !json['wazuh'] &&
+        IGNORED_PACKAGES.some((ign) => pkgNameLower.includes(ign))
+      ) {
+        isIgnoredDevPackage = true;
+      }
+
       if (typeof json['version'] === 'string' && !hasOsdJson) version = json['version'];
       if (typeof json['description'] === 'string') description = json['description'];
 
@@ -134,6 +164,10 @@ function parsePluginDirectory(
     } catch {
       // ignore parse errors
     }
+  }
+
+  if (isIgnoredDevPackage) {
+    return null;
   }
 
   // Deduplicate and sanitize ID

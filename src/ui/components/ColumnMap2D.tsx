@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Search } from 'lucide-react';
 import type { BrainNode, BrainEdge } from '../types.js';
 
 interface ColumnMap2DProps {
@@ -22,6 +23,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
   onSelectNode,
 }) => {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [positions, setPositions] = useState<Map<string, NodePosition>>(new Map());
@@ -36,7 +38,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
   ];
 
   // Measure card coordinates for SVG curve rendering
-  const updatePositions = () => {
+  const updatePositions = useCallback(() => {
     if (!containerRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     const newPositions = new Map<string, NodePosition>();
@@ -44,6 +46,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
     nodeRefs.current.forEach((el, id) => {
       if (el) {
         const rect = el.getBoundingClientRect();
+        // Check if visible inside container
         newPositions.set(id, {
           x: rect.left - containerRect.left,
           y: rect.top - containerRect.top,
@@ -54,7 +57,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
     });
 
     setPositions(newPositions);
-  };
+  }, []);
 
   useEffect(() => {
     updatePositions();
@@ -64,7 +67,12 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
       clearTimeout(timeout);
       window.removeEventListener('resize', updatePositions);
     };
-  }, [nodes, edges]);
+  }, [nodes, edges, updatePositions]);
+
+  const handleFilterChange = (key: string, value: string) => {
+    setColumnFilters((prev) => ({ ...prev, [key]: value }));
+    setTimeout(updatePositions, 50);
+  };
 
   const activeNodeId = hoveredNodeId ?? selectedNode?.id ?? null;
 
@@ -83,7 +91,8 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
       {/* Main Column Layout Container */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto p-8 relative flex gap-12 justify-around min-w-[900px]"
+        onScroll={updatePositions}
+        className="flex-1 overflow-x-auto overflow-y-hidden p-6 relative flex gap-8 justify-around min-w-[900px]"
       >
         {/* SVG Bezier Curves Overlay */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible">
@@ -132,21 +141,51 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
 
         {/* Columns */}
         {categories.map((col) => {
-          const colNodes = nodes.filter(col.match);
-          if (colNodes.length === 0) return null;
+          const rawColNodes = nodes.filter(col.match);
+          if (rawColNodes.length === 0) return null;
+
+          const filterText = columnFilters[col.key] ?? '';
+          const colNodes = rawColNodes.filter(
+            (n) =>
+              n.label.toLowerCase().includes(filterText.toLowerCase()) ||
+              n.id.toLowerCase().includes(filterText.toLowerCase()) ||
+              (n.description && n.description.toLowerCase().includes(filterText.toLowerCase()))
+          );
 
           return (
-            <div key={col.key} className="flex-1 flex flex-col gap-3 min-w-[160px] max-w-[240px] z-20">
-              <div className="flex items-center justify-between border-b border-border/80 pb-1.5 px-1">
+            <div
+              key={col.key}
+              className="flex-1 flex flex-col min-w-[200px] max-w-[280px] z-20 max-h-[calc(100vh-140px)] bg-surface/40 border border-border/60 rounded-xl p-3 shadow-sm"
+            >
+              {/* Column Header */}
+              <div className="flex items-center justify-between border-b border-border/80 pb-2 mb-2 px-1 shrink-0">
                 <span className="font-mono text-xs font-semibold tracking-wider text-ink-secondary">
                   {col.label}
                 </span>
                 <span className="text-[10px] font-mono text-ink-tertiary">
-                  {colNodes.length}
+                  {colNodes.length} / {rawColNodes.length}
                 </span>
               </div>
 
-              <div className="flex flex-col gap-2.5">
+              {/* Column Search Filter if > 5 items */}
+              {rawColNodes.length > 5 && (
+                <div className="relative mb-2 shrink-0">
+                  <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-ink-tertiary" />
+                  <input
+                    type="text"
+                    value={filterText}
+                    onChange={(e) => handleFilterChange(col.key, e.target.value)}
+                    placeholder={`Filter ${col.label.toLowerCase()}...`}
+                    className="w-full bg-canvas text-[11px] text-ink-primary pl-6 pr-2 py-1 rounded border border-border/80 outline-none focus:border-white"
+                  />
+                </div>
+              )}
+
+              {/* Scrollable Node Cards Container */}
+              <div
+                onScroll={updatePositions}
+                className="flex-1 overflow-y-auto space-y-2 pr-1"
+              >
                 {colNodes.map((node) => {
                   const isSelected = selectedNode?.id === node.id;
                   const isHovered = hoveredNodeId === node.id;
@@ -168,7 +207,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                       onMouseEnter={() => setHoveredNodeId(node.id)}
                       onMouseLeave={() => setHoveredNodeId(null)}
                       onClick={() => onSelectNode(node)}
-                      className={`p-3 rounded-lg border text-left cursor-pointer transition-all duration-150 relative ${
+                      className={`p-2.5 rounded-lg border text-left cursor-pointer transition-all duration-150 relative ${
                         isSelected
                           ? 'bg-white/15 border-white shadow-lg text-white'
                           : isHovered || isConnected
@@ -180,7 +219,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                         <span className="font-mono text-[11px] font-semibold tracking-tight truncate">
                           {node.label}
                         </span>
-                        <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-white/[0.06] text-ink-tertiary uppercase">
+                        <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-white/[0.06] text-ink-tertiary uppercase shrink-0">
                           {node.type}
                         </span>
                       </div>
@@ -190,6 +229,12 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                     </div>
                   );
                 })}
+
+                {colNodes.length === 0 && (
+                  <div className="text-[11px] text-ink-tertiary text-center py-6">
+                    No items match filter.
+                  </div>
+                )}
               </div>
             </div>
           );
