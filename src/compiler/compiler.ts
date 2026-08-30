@@ -89,7 +89,7 @@ export async function compileBrain(options: CompileOptions = {}): Promise<Compil
       'INSERT INTO versions (id, name, base_version, channel, is_prerelease) VALUES (?, ?, ?, ?, ?)'
     );
     const insertPlugin = db.prepare(
-      'INSERT INTO plugins (id, name, version, description, wazuh_versions) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO plugins (id, name, version, description, wazuh_versions, category) VALUES (?, ?, ?, ?, ?, ?)'
     );
     const insertNode = db.prepare(
       'INSERT INTO nodes (id, type, label, package, file_path, description, version_id, plugin_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -279,9 +279,9 @@ export async function compileBrain(options: CompileOptions = {}): Promise<Compil
           pluginObj.name,
           pluginObj.version,
           pluginObj.description ?? null,
-          JSON.stringify(pluginObj.wazuh_versions)
+          JSON.stringify(pluginObj.wazuh_versions),
+          pluginObj.category ?? 'wazuh'
         );
-        pluginsCount++;
 
         // Process Plugin Rules
         const rulesDir = path.join(pluginPath, 'rules');

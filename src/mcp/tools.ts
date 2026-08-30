@@ -62,7 +62,7 @@ export function executeTool(db: Database.Database, toolName: string, args: Recor
   switch (toolName) {
     case 'brain_list_versions': {
       const versions = db.prepare('SELECT id, name, base_version, channel, is_prerelease FROM versions').all();
-      const plugins = db.prepare('SELECT id, name, version, description, wazuh_versions FROM plugins').all();
+      const plugins = db.prepare('SELECT id, name, version, description, wazuh_versions, category FROM plugins').all();
       return { versions, plugins };
     }
 

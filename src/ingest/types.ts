@@ -11,6 +11,7 @@ export interface DiscoveredPlugin {
   ui: boolean;
   sourcePath?: string;
   repository?: string;
+  category: 'wazuh' | 'platform';
 }
 
 export interface IngestOptions {
@@ -20,6 +21,7 @@ export interface IngestOptions {
   repositories?: string[];
   githubToken?: string;
   outDir?: string;
+  dbPath?: string;
   compileAfter?: boolean;
 }
 

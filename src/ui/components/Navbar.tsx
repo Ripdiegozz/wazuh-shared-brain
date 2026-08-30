@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Layers, Box, Cpu, ShieldAlert, BookOpen, Sparkles, DownloadCloud, ChevronDown, CheckSquare, Square } from 'lucide-react';
+import { Search, Layers, Box, Cpu, ShieldAlert, BookOpen, Sparkles, DownloadCloud, ChevronDown, CheckSquare, Square, ShieldCheck } from 'lucide-react';
 import type { BrainVersion, BrainPlugin } from '../types.js';
 
 interface NavbarProps {
@@ -9,6 +9,7 @@ interface NavbarProps {
   plugins: BrainPlugin[];
   selectedPlugins: string[];
   onTogglePlugin: (pluginId: string) => void;
+  onSelectAllWazuh?: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onOpenIngest: () => void;
@@ -27,13 +28,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   plugins,
   selectedPlugins,
   onTogglePlugin,
+  onSelectAllWazuh,
   searchQuery,
   onSearchChange,
   onOpenIngest,
   stats,
 }) => {
   const [isPluginDropdownOpen, setIsPluginDropdownOpen] = useState(false);
-  const [pluginFilter, setPluginFilter] = useState('');
+  const [pluginCategoryFilter, setPluginCategoryFilter] = useState<'all' | 'wazuh'>('wazuh');
+  const [pluginSearchText, setPluginSearchText] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentVersionObj = versions.find((v) => v.id === selectedVersion);
@@ -51,11 +54,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredPlugins = plugins.filter(
-    (p) =>
-      p.name.toLowerCase().includes(pluginFilter.toLowerCase()) ||
-      p.id.toLowerCase().includes(pluginFilter.toLowerCase())
-  );
+  const wazuhPluginsCount = plugins.filter((p) => (p.category ?? 'wazuh') === 'wazuh').length;
+
+  const filteredPlugins = plugins.filter((p) => {
+    if (pluginCategoryFilter === 'wazuh' && (p.category ?? 'wazuh') !== 'wazuh') {
+      return false;
+    }
+    if (pluginSearchText) {
+      const q = pluginSearchText.toLowerCase();
+      return p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   return (
     <header className="h-14 border-b border-border bg-surface flex items-center justify-between px-4 select-none shrink-0 z-30 relative">
@@ -92,7 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Clean Plugin Dropdown Menu */}
+        {/* Clean Plugin Dropdown Menu with Wazuh-Only Filter */}
         {plugins.length > 0 && (
           <div className="relative pl-2 border-l border-border" ref={dropdownRef}>
             <button
@@ -109,12 +119,38 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Popover Dropdown */}
             {isPluginDropdownOpen && (
-              <div className="absolute top-9 left-2 w-72 bg-surface-raised border border-border rounded-lg shadow-2xl p-2.5 space-y-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute top-9 left-2 w-80 bg-surface-raised border border-border rounded-lg shadow-2xl p-2.5 space-y-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                {/* Category Segment Tabs */}
+                <div className="flex border border-border rounded p-0.5 bg-canvas text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setPluginCategoryFilter('wazuh')}
+                    className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                      pluginCategoryFilter === 'wazuh'
+                        ? 'bg-white/15 text-white font-semibold'
+                        : 'text-ink-tertiary hover:text-ink-primary'
+                    }`}
+                  >
+                    Wazuh Only ({wazuhPluginsCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPluginCategoryFilter('all')}
+                    className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                      pluginCategoryFilter === 'all'
+                        ? 'bg-white/15 text-white font-semibold'
+                        : 'text-ink-tertiary hover:text-ink-primary'
+                    }`}
+                  >
+                    All ({plugins.length})
+                  </button>
+                </div>
+
                 <input
                   type="text"
-                  value={pluginFilter}
-                  onChange={(e) => setPluginFilter(e.target.value)}
-                  placeholder="Filter plugins..."
+                  value={pluginSearchText}
+                  onChange={(e) => setPluginSearchText(e.target.value)}
+                  placeholder="Search plugins..."
                   className="w-full bg-canvas text-xs text-ink-primary px-2 py-1.5 rounded border border-border outline-none focus:border-white"
                   autoFocus
                 />
@@ -122,6 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
                   {filteredPlugins.map((p) => {
                     const active = selectedPlugins.includes(p.id);
+                    const isWazuhCategory = (p.category ?? 'wazuh') === 'wazuh';
                     return (
                       <div
                         key={p.id}
@@ -130,7 +167,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                           active ? 'bg-white/15 text-white' : 'hover:bg-white/[0.04] text-ink-secondary'
                         }`}
                       >
-                        <span className="truncate pr-2 font-mono text-[11px]">{p.name}</span>
+                        <div className="flex items-center gap-1.5 truncate pr-2">
+                          {isWazuhCategory && (
+                            <span title="Wazuh Official Plugin">
+                              <ShieldCheck className="w-3 h-3 text-sky-400 shrink-0" />
+                            </span>
+                          )}
+                          <span className="truncate font-mono text-[11px]">{p.name}</span>
+                        </div>
                         {active ? (
                           <CheckSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         ) : (

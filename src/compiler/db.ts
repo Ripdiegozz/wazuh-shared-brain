@@ -31,7 +31,8 @@ export function initSchema(db: Database.Database): void {
       name TEXT NOT NULL,
       version TEXT NOT NULL,
       description TEXT,
-      wazuh_versions TEXT
+      wazuh_versions TEXT,
+      category TEXT NOT NULL DEFAULT 'wazuh'
     );
 
     CREATE TABLE IF NOT EXISTS nodes (

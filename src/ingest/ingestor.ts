@@ -54,6 +54,7 @@ export async function ingestWazuhPlugins(options: IngestOptions = {}): Promise<I
       description: plugin.description ?? `Wazuh Dashboard plugin ${plugin.name}`,
       wazuh_versions: [wazuhVersionConstraint],
       opensearch_dashboards_version: plugin.opensearchDashboardsVersion,
+      category: plugin.category,
     });
     fs.writeFileSync(manifestPath, manifestContent, 'utf-8');
     sourcesWritten.push(manifestPath);
@@ -112,7 +113,7 @@ export async function ingestWazuhPlugins(options: IngestOptions = {}): Promise<I
 
   // 3. Optional auto-compile
   if (options.compileAfter !== false) {
-    await compileBrain({ rootDir });
+    await compileBrain({ rootDir, dbPath: options.dbPath });
   }
 
   return {

@@ -59,4 +59,5 @@ export interface BrainPlugin {
   version: string;
   description?: string;
   wazuh_versions: string[];
+  category?: 'wazuh' | 'platform';
 }

@@ -84,6 +84,7 @@ export async function fetchRemotePlugins(options: {
         server,
         ui,
         repository: `${org}/${repo}`,
+        category: 'wazuh',
       });
     } catch {
       // Continue on repo network/parse error

@@ -23,6 +23,19 @@ const IGNORED_DIRS = new Set([
   'src/dev',
 ]);
 
+const WAZUH_KEYWORDS = [
+  'wazuh',
+  'security-dashboard',
+  'security_dashboard',
+  'securityanalytics',
+  'security_analytics',
+  'reporting',
+  'reports',
+  'notifications',
+  'alerting',
+  'threat-intel',
+];
+
 export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredPlugin[] {
   const discovered: DiscoveredPlugin[] = [];
   const resolvedRoot = path.resolve(rootDir);
@@ -196,6 +209,8 @@ function parsePluginDirectory(
   }
 
   const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
+  const searchCorpus = `${cleanId} ${name.toLowerCase()} ${normalizedPath.toLowerCase()}`;
+  const isWazuh = WAZUH_KEYWORDS.some((kw) => searchCorpus.includes(kw));
 
   return {
     id: cleanId,
@@ -209,5 +224,6 @@ function parsePluginDirectory(
     server,
     ui,
     sourcePath: pluginDir,
+    category: isWazuh ? 'wazuh' : 'platform',
   };
 }

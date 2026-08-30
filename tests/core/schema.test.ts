@@ -73,7 +73,8 @@ describe('Core Entity Schemas', () => {
       name: 'Threat Intelligence Overlay',
       version: '1.2.0',
       description: 'IOC reputation enrichment',
-      wazuh_versions: ['>=4.8 <4.11']
+      wazuh_versions: ['>=4.8 <4.11'],
+      category: 'wazuh' as const,
     };
     expect(PluginManifestSchema.parse(plugin)).toEqual(plugin);
   });

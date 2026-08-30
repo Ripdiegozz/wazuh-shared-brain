@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search } from 'lucide-react';
+import { Search, ShieldCheck } from 'lucide-react';
 import type { BrainNode, BrainEdge } from '../types.js';
 
 interface ColumnMap2DProps {
@@ -16,6 +16,16 @@ interface NodePosition {
   height: number;
 }
 
+const WAZUH_KEYWORDS = [
+  'wazuh',
+  'securitydashboards',
+  'securityanalytics',
+  'reports',
+  'notifications',
+  'alerting',
+  'threat-intel',
+];
+
 export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
   nodes,
   edges,
@@ -24,6 +34,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
 }) => {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [wazuhOnlyPlugins, setWazuhOnlyPlugins] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [positions, setPositions] = useState<Map<string, NodePosition>>(new Map());
@@ -46,7 +57,6 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
     nodeRefs.current.forEach((el, id) => {
       if (el) {
         const rect = el.getBoundingClientRect();
-        // Check if visible inside container
         newPositions.set(id, {
           x: rect.left - containerRect.left,
           y: rect.top - containerRect.top,
@@ -67,7 +77,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
       clearTimeout(timeout);
       window.removeEventListener('resize', updatePositions);
     };
-  }, [nodes, edges, updatePositions]);
+  }, [nodes, edges, wazuhOnlyPlugins, updatePositions]);
 
   const handleFilterChange = (key: string, value: string) => {
     setColumnFilters((prev) => ({ ...prev, [key]: value }));
@@ -141,8 +151,20 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
 
         {/* Columns */}
         {categories.map((col) => {
-          const rawColNodes = nodes.filter(col.match);
+          let rawColNodes = nodes.filter(col.match);
           if (rawColNodes.length === 0) return null;
+
+          // Apply Wazuh Only filter on plugins column if active
+          if (col.key === 'plugin' && wazuhOnlyPlugins) {
+            rawColNodes = rawColNodes.filter((n) =>
+              WAZUH_KEYWORDS.some(
+                (kw) =>
+                  n.id.toLowerCase().includes(kw) ||
+                  n.label.toLowerCase().includes(kw) ||
+                  n.package.toLowerCase().includes(kw)
+              )
+            );
+          }
 
           const filterText = columnFilters[col.key] ?? '';
           const colNodes = rawColNodes.filter(
@@ -155,7 +177,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
           return (
             <div
               key={col.key}
-              className="flex-1 flex flex-col min-w-[200px] max-w-[280px] z-20 max-h-[calc(100vh-140px)] bg-surface/40 border border-border/60 rounded-xl p-3 shadow-sm"
+              className="flex-1 flex flex-col min-w-[210px] max-w-[280px] z-20 max-h-[calc(100vh-140px)] bg-surface/40 border border-border/60 rounded-xl p-3 shadow-sm"
             >
               {/* Column Header */}
               <div className="flex items-center justify-between border-b border-border/80 pb-2 mb-2 px-1 shrink-0">
@@ -163,9 +185,44 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                   {col.label}
                 </span>
                 <span className="text-[10px] font-mono text-ink-tertiary">
-                  {colNodes.length} / {rawColNodes.length}
+                  {colNodes.length} / {nodes.filter(col.match).length}
                 </span>
               </div>
+
+              {/* Wazuh Only Toggle for Plugins */}
+              {col.key === 'plugin' && (
+                <div className="flex border border-border rounded p-0.5 mb-2 bg-canvas text-[10px] shrink-0 font-mono">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWazuhOnlyPlugins(true);
+                      setTimeout(updatePositions, 50);
+                    }}
+                    className={`flex-1 py-0.5 px-1 rounded transition-all flex items-center justify-center gap-1 ${
+                      wazuhOnlyPlugins
+                        ? 'bg-white/15 text-white font-semibold'
+                        : 'text-ink-tertiary hover:text-ink-primary'
+                    }`}
+                  >
+                    <ShieldCheck className="w-2.5 h-2.5 text-sky-400" />
+                    <span>Wazuh Only</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWazuhOnlyPlugins(false);
+                      setTimeout(updatePositions, 50);
+                    }}
+                    className={`flex-1 py-0.5 px-1 rounded transition-all ${
+                      !wazuhOnlyPlugins
+                        ? 'bg-white/15 text-white font-semibold'
+                        : 'text-ink-tertiary hover:text-ink-primary'
+                    }`}
+                  >
+                    All
+                  </button>
+                </div>
+              )}
 
               {/* Column Search Filter if > 5 items */}
               {rawColNodes.length > 5 && (
@@ -197,6 +254,13 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                         (e.target === activeNodeId && e.source === node.id)
                     );
 
+                  const isWazuhNode = WAZUH_KEYWORDS.some(
+                    (kw) =>
+                      node.id.toLowerCase().includes(kw) ||
+                      node.label.toLowerCase().includes(kw) ||
+                      node.package.toLowerCase().includes(kw)
+                  );
+
                   return (
                     <div
                       key={node.id}
@@ -216,9 +280,14 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-[11px] font-semibold tracking-tight truncate">
-                          {node.label}
-                        </span>
+                        <div className="flex items-center gap-1 truncate pr-1">
+                          {isWazuhNode && col.key === 'plugin' && (
+                            <ShieldCheck className="w-3 h-3 text-sky-400 shrink-0" />
+                          )}
+                          <span className="font-mono text-[11px] font-semibold tracking-tight truncate">
+                            {node.label}
+                          </span>
+                        </div>
                         <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-white/[0.06] text-ink-tertiary uppercase shrink-0">
                           {node.type}
                         </span>

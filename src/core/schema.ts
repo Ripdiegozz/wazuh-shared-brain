@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const SeverityEnum = z.enum(['HARD', 'WARN', 'TIP']);
 export const DoctrineStatusEnum = z.enum(['ACTIVE', 'SUPERSEDED', 'DEPRECATED']);
 export const VersionChannelEnum = z.enum(['stable', 'beta', 'rc', 'alpha']);
+export const PluginCategoryEnum = z.enum(['wazuh', 'platform']);
 export const NodeTypeEnum = z.enum([
   'daemon',
   'agent',
@@ -83,6 +84,7 @@ export const PluginManifestSchema = z.object({
   version: z.string(),
   description: z.string().optional(),
   wazuh_versions: z.array(z.string()),
+  category: PluginCategoryEnum.optional().default('wazuh'),
 });
 
 export type Version = z.infer<typeof VersionSchema>;
@@ -92,6 +94,7 @@ export type Doctrine = z.infer<typeof DoctrineSchema>;
 export type Node = z.infer<typeof NodeSchema>;
 export type Connection = z.infer<typeof ConnectionSchema>;
 export type PluginManifest = z.infer<typeof PluginManifestSchema>;
+export type PluginCategory = z.infer<typeof PluginCategoryEnum>;
 export type Severity = z.infer<typeof SeverityEnum>;
 export type DoctrineStatus = z.infer<typeof DoctrineStatusEnum>;
 export type NodeType = z.infer<typeof NodeTypeEnum>;
