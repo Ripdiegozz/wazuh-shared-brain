@@ -1,0 +1,6 @@
+id: "syscheckd"
+type: "daemon"
+label: "File Integrity Monitoring"
+package: "wazuh-core"
+file_path: "src/syscheckd/main.c"
+description: "Monitors file system changes and cryptographic hash drifts"

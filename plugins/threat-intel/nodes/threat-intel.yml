@@ -1,0 +1,6 @@
+id: "threat-intel"
+type: "plugin"
+label: "Threat Intelligence Service"
+package: "wazuh-plugin-threat-intel"
+file_path: "plugins/threat_intel/service.py"
+description: "Queries external threat feeds (MISP, VirusTotal, AbuseIPDB)"

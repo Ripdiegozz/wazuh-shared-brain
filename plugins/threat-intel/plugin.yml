@@ -1,0 +1,6 @@
+id: "threat-intel"
+name: "Threat Intelligence Integration"
+version: "1.2.0"
+description: "Enriches incoming events with real-time IOC feeds and reputation scores"
+wazuh_versions:
+  - ">=4.8"
