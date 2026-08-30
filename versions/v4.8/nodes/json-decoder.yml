@@ -1,0 +1,6 @@
+id: "json-decoder"
+type: "decoder"
+label: "JSON Event Decoder"
+package: "wazuh-ruleset"
+file_path: "ruleset/decoders/0005-json_decoders.xml"
+description: "Parses structured JSON payloads into normalized fields"

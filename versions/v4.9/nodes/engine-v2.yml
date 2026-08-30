@@ -1,0 +1,6 @@
+id: "engine-v2"
+type: "daemon"
+label: "Next-Gen Analysis Engine"
+package: "wazuh-core"
+file_path: "src/engine_v2/main.rs"
+description: "High-performance Rust-based rule evaluation pipeline"

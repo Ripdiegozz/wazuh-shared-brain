@@ -1,0 +1,6 @@
+id: "wazuh-agent"
+type: "agent"
+label: "Endpoint Agent"
+package: "wazuh-agent"
+file_path: "src/agent/main.c"
+description: "Endpoint daemon collecting logs, metrics, and integrity state"

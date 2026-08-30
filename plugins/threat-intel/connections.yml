@@ -1,0 +1,6 @@
+connections:
+  - from: "threat-intel"
+    to: "analysisd"
+    type: "INTERCEPTS"
+    weight: "HIGH"
+    description: "Appends threat metadata to normalized events prior to rule matching"

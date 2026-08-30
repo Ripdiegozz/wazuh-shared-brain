@@ -1,0 +1,6 @@
+id: "remoted"
+type: "daemon"
+label: "Remote Daemon"
+package: "wazuh-core"
+file_path: "src/remoted/main.c"
+description: "Listens for agent traffic, negotiates crypto keys, and forwards events to analysis queue"

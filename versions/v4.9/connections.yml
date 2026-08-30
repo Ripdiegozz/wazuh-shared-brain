@@ -1,0 +1,11 @@
+connections:
+  - from: "remoted"
+    to: "engine-v2"
+    type: "INVOKES"
+    weight: "CRITICAL"
+    description: "Routes agent events directly to v2 lock-free queue"
+  - from: "engine-v2"
+    to: "analysisd"
+    type: "OVERRIDES"
+    weight: "CRITICAL"
+    description: "Replaces legacy analysis loop when engine-v2 is active"
