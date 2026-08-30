@@ -1,0 +1,6 @@
+id: "security-actions-ref"
+type: "reference"
+label: "SECURITY_ACTIONS.md"
+package: "wazuh-docs"
+file_path: "docs/architecture/SECURITY_ACTIONS.md"
+description: "Canonical catalog of RBAC actions required for all Wazuh Dashboard API endpoints"

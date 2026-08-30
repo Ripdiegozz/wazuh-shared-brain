@@ -1,0 +1,6 @@
+id: "server-api-client"
+type: "tool"
+label: "server-api-client.ts"
+package: "wazuh-core"
+file_path: "plugins/wazuh-core/server/services/server-api-client.ts"
+description: "Centralized HTTP proxy client communicating with Wazuh Manager cluster"

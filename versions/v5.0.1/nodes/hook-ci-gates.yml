@@ -1,0 +1,6 @@
+id: "ci-gates"
+type: "hook"
+label: "CI_GATES (GitHub Actions)"
+package: "wazuh-dashboard-ci"
+file_path: ".github/workflows/ci.yml"
+description: "Runs comprehensive Jest server tests, UI coverage, and Cypress regression suites"

@@ -1,0 +1,6 @@
+id: "rbac-validator"
+type: "agent"
+label: "rbac-validator"
+package: "wazuh-agents"
+file_path: ".agents/personas/rbac-validator.md"
+description: "Audits endpoint permissions, security-actions.json, and index authorization errors"

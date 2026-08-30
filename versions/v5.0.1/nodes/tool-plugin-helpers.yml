@@ -1,0 +1,6 @@
+id: "plugin-helpers"
+type: "tool"
+label: "plugin-helpers.js"
+package: "wazuh-dashboard"
+file_path: "scripts/plugin_helpers.js"
+description: "OpenSearch Dashboards plugin compilation and package bundle utility"

@@ -30,13 +30,15 @@ interface GraphLinkObject {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  daemon: '#3b82f6',
+  skill: '#3b82f6',
   agent: '#10b981',
+  tool: '#f59e0b',
+  hook: '#f43f5e',
+  reference: '#a855f7',
+  plugin: '#0ea5e9',
+  service: '#06b6d4',
+  daemon: '#64748b',
   decoder: '#8b5cf6',
-  plugin: '#f59e0b',
-  hook: '#ec4899',
-  skill: '#06b6d4',
-  reference: '#64748b',
 };
 
 export const OrbitalMap3D: React.FC<OrbitalMap3DProps> = ({

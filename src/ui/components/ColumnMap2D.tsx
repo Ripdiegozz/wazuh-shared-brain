@@ -26,6 +26,17 @@ const WAZUH_KEYWORDS = [
   'threat-intel',
 ];
 
+const TYPE_STYLES: Record<string, { badgeBg: string; badgeText: string; borderColor: string }> = {
+  skill: { badgeBg: 'bg-blue-500/10', badgeText: 'text-blue-400', borderColor: 'border-blue-500/30' },
+  agent: { badgeBg: 'bg-emerald-500/10', badgeText: 'text-emerald-400', borderColor: 'border-emerald-500/30' },
+  tool: { badgeBg: 'bg-amber-500/10', badgeText: 'text-amber-400', borderColor: 'border-amber-500/30' },
+  hook: { badgeBg: 'bg-rose-500/10', badgeText: 'text-rose-400', borderColor: 'border-rose-500/30' },
+  reference: { badgeBg: 'bg-purple-500/10', badgeText: 'text-purple-400', borderColor: 'border-purple-500/30' },
+  plugin: { badgeBg: 'bg-sky-500/10', badgeText: 'text-sky-400', borderColor: 'border-sky-500/30' },
+  service: { badgeBg: 'bg-cyan-500/10', badgeText: 'text-cyan-400', borderColor: 'border-cyan-500/30' },
+  daemon: { badgeBg: 'bg-neutral-500/10', badgeText: 'text-neutral-400', borderColor: 'border-neutral-500/30' },
+};
+
 export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
   nodes,
   edges,
@@ -39,13 +50,18 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [positions, setPositions] = useState<Map<string, NodePosition>>(new Map());
 
-  // Group nodes by category columns
+  // Development governance columns matching inspiration
   const categories = [
-    { key: 'daemon', label: 'DAEMONS', match: (n: BrainNode) => n.type === 'daemon' },
-    { key: 'agent', label: 'AGENTS', match: (n: BrainNode) => n.type === 'agent' },
-    { key: 'decoder', label: 'DECODERS', match: (n: BrainNode) => n.type === 'decoder' },
-    { key: 'plugin', label: 'PLUGINS', match: (n: BrainNode) => n.type === 'plugin' },
-    { key: 'other', label: 'COMPONENTS', match: (n: BrainNode) => !['daemon', 'agent', 'decoder', 'plugin'].includes(n.type) },
+    { key: 'skill', label: 'SKILLS', match: (n: BrainNode) => n.type === 'skill' },
+    { key: 'agent', label: 'AGENTES', match: (n: BrainNode) => n.type === 'agent' },
+    { key: 'tool', label: 'HERRAMIENTAS', match: (n: BrainNode) => n.type === 'tool' },
+    { key: 'hook', label: 'HOOKS', match: (n: BrainNode) => n.type === 'hook' },
+    { key: 'reference', label: 'REFERENCIAS', match: (n: BrainNode) => n.type === 'reference' },
+    {
+      key: 'plugin',
+      label: 'PLUGINS & SERVICES',
+      match: (n: BrainNode) => n.type === 'plugin' || n.type === 'service' || n.type === 'daemon',
+    },
   ];
 
   // Measure card coordinates for SVG curve rendering
@@ -91,7 +107,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
       {/* Top instruction bar */}
       <div className="p-3 px-4 border-b border-border flex items-center justify-between text-xs text-ink-secondary bg-surface/50 shrink-0">
         <div>
-          <span className="font-semibold text-ink-primary">2D Hierarchical Flow:</span> Hover or click a node to highlight its dependency chain.
+          <span className="font-semibold text-ink-primary">Development Governance Flow:</span> Hover or click any skill, agent, tool, or reference to trace dependencies and CI gates.
         </div>
         <div className="font-mono text-[11px] text-ink-tertiary">
           {nodes.length} Nodes • {edges.length} Connections
@@ -102,7 +118,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
       <div
         ref={containerRef}
         onScroll={updatePositions}
-        className="flex-1 overflow-x-auto overflow-y-hidden p-6 relative flex gap-8 justify-around min-w-[900px]"
+        className="flex-1 overflow-x-auto overflow-y-hidden p-6 relative flex gap-6 justify-start min-w-[1100px]"
       >
         {/* SVG Bezier Curves Overlay */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible">
@@ -141,7 +157,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                   }
                   strokeWidth={isHighlighted ? 2.5 : 1}
                   strokeDasharray={edge.type === 'INTERCEPTS' ? '4 3' : undefined}
-                  opacity={isDimmed ? 0.05 : isHighlighted ? 1 : 0.4}
+                  opacity={isDimmed ? 0.05 : isHighlighted ? 1 : 0.35}
                   className="transition-all duration-200"
                 />
               </g>
@@ -176,7 +192,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
           return (
             <div
               key={col.key}
-              className="flex-1 flex flex-col min-w-[210px] max-w-[280px] z-20 max-h-[calc(100vh-140px)] bg-surface/40 border border-border/60 rounded-xl p-3 shadow-sm"
+              className="flex-1 flex flex-col min-w-[200px] max-w-[260px] z-20 max-h-[calc(100vh-140px)] bg-surface/40 border border-border/60 rounded-xl p-3 shadow-sm"
             >
               {/* Column Header */}
               <div className="flex items-center justify-between border-b border-border/80 pb-2 mb-2 px-1 shrink-0">
@@ -204,7 +220,7 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                     }`}
                   >
                     <ShieldCheck className="w-2.5 h-2.5 text-sky-400" />
-                    <span>Wazuh Only</span>
+                    <span>Wazuh</span>
                   </button>
                   <button
                     type="button"
@@ -223,8 +239,8 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                 </div>
               )}
 
-              {/* Column Search Filter if > 5 items */}
-              {rawColNodes.length > 5 && (
+              {/* Column Search Filter if > 4 items */}
+              {rawColNodes.length > 4 && (
                 <div className="relative mb-2 shrink-0">
                   <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-ink-tertiary" />
                   <input
@@ -253,12 +269,11 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                         (e.target === activeNodeId && e.source === node.id)
                     );
 
-                  const isWazuhNode = WAZUH_KEYWORDS.some(
-                    (kw) =>
-                      node.id.toLowerCase().includes(kw) ||
-                      node.label.toLowerCase().includes(kw) ||
-                      node.package.toLowerCase().includes(kw)
-                  );
+                  const typeStyle = TYPE_STYLES[node.type] ?? {
+                    badgeBg: 'bg-white/5',
+                    badgeText: 'text-ink-tertiary',
+                    borderColor: 'border-border',
+                  };
 
                   return (
                     <div
@@ -279,15 +294,12 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1 truncate pr-1">
-                          {isWazuhNode && col.key === 'plugin' && (
-                            <ShieldCheck className="w-3 h-3 text-sky-400 shrink-0" />
-                          )}
-                          <span className="font-mono text-[11px] font-semibold tracking-tight truncate">
-                            {node.label}
-                          </span>
-                        </div>
-                        <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-white/[0.06] text-ink-tertiary uppercase shrink-0">
+                        <span className="font-mono text-[11px] font-semibold tracking-tight truncate pr-1">
+                          {node.label}
+                        </span>
+                        <span
+                          className={`text-[9px] font-mono px-1.5 py-0.2 rounded uppercase shrink-0 font-semibold border ${typeStyle.badgeBg} ${typeStyle.badgeText} ${typeStyle.borderColor}`}
+                        >
                           {node.type}
                         </span>
                       </div>

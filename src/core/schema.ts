@@ -5,14 +5,15 @@ export const DoctrineStatusEnum = z.enum(['ACTIVE', 'SUPERSEDED', 'DEPRECATED'])
 export const VersionChannelEnum = z.enum(['stable', 'beta', 'rc', 'alpha']);
 export const PluginCategoryEnum = z.enum(['wazuh', 'platform']);
 export const NodeTypeEnum = z.enum([
-  'daemon',
-  'agent',
-  'decoder',
-  'hook',
   'skill',
+  'agent',
   'tool',
+  'hook',
   'reference',
   'plugin',
+  'service',
+  'daemon',
+  'decoder',
 ]);
 export const EdgeTypeEnum = z.enum([
   'INVOKES',

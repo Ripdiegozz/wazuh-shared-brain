@@ -1,0 +1,6 @@
+id: "api-contracts-ref"
+type: "reference"
+label: "API_CONTRACTS.md"
+package: "wazuh-docs"
+file_path: "docs/architecture/API_CONTRACTS.md"
+description: "Manager REST API endpoint specifications and JSON payload schemas"

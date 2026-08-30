@@ -1,0 +1,6 @@
+id: "cypress-e2e"
+type: "skill"
+label: "/cypress-e2e"
+package: "wazuh-dashboard-governance"
+file_path: ".agents/skills/cypress-e2e/SKILL.md"
+description: "Runs and authors Cypress end-to-end page object tests"

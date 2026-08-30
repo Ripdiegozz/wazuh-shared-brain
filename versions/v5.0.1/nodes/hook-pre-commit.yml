@@ -1,0 +1,6 @@
+id: "pre-commit"
+type: "hook"
+label: "PreCommit (Husky)"
+package: "wazuh-dashboard-ci"
+file_path: ".husky/pre-commit"
+description: "Executes ESLint and TypeScript compilation checks prior to git commit"

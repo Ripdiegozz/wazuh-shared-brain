@@ -1,0 +1,6 @@
+id: "test-jest"
+type: "skill"
+label: "/test-jest"
+package: "wazuh-dashboard-governance"
+file_path: ".agents/skills/test-jest/SKILL.md"
+description: "Executes co-located Jest server and UI tests with Manager API mocking"

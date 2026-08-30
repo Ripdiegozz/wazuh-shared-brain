@@ -1,0 +1,6 @@
+id: "wazuh-dev"
+type: "skill"
+label: "/wazuh-dev"
+package: "wazuh-dashboard-governance"
+file_path: ".agents/skills/wazuh-dev/SKILL.md"
+description: "Core skill for creating, testing, and reviewing Wazuh Dashboard plugins and routes"

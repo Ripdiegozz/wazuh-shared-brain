@@ -1,0 +1,6 @@
+id: "dashboard-architect"
+type: "agent"
+label: "dashboard-architect"
+package: "wazuh-agents"
+file_path: ".agents/personas/dashboard-architect.md"
+description: "Architectural advisor for micro-frontend plugin design and system invariant enforcement"
