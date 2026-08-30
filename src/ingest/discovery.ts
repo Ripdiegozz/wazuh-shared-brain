@@ -16,25 +16,37 @@ const IGNORED_DIRS = new Set([
   'test',
   'tests',
   'fixtures',
-  'packages', // Internal shared libraries (osd-i18n, osd-utils, etc.)
+  'packages',
   'scripts',
   'developer_examples',
   'examples',
   'src/dev',
 ]);
 
-const WAZUH_KEYWORDS = [
+const WAZUH_OFFICIAL_KEYWORDS = [
   'wazuh',
   'security-dashboard',
   'security_dashboard',
   'securityanalytics',
   'security_analytics',
+  'securitydashboards',
+  'reportsdashboards',
   'reporting',
-  'reports',
+  'notificationsdashboards',
   'notifications',
+  'alertingdashboards',
   'alerting',
   'threat-intel',
+  'assistant',
+  'agent_traces',
+  'chat',
 ];
+
+const REPO_CONTAINER_NAMES = new Set([
+  'opensearch-dashboards',
+  'wazuh-dashboard-plugins',
+  'wazuh-dashboard',
+]);
 
 export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredPlugin[] {
   const discovered: DiscoveredPlugin[] = [];
@@ -59,27 +71,32 @@ export function discoverLocalPlugins(rootDir: string, maxDepth = 4): DiscoveredP
     );
     const hasPkgJson = entries.some((e) => e.isFile() && e.name === 'package.json');
 
-    // Only inspect directories that have a genuine plugin manifest or wazuh plugin config
     if (hasOsdJson || hasPkgJson) {
       const plugin = parsePluginDirectory(currentDir, hasOsdJson, hasPkgJson);
       if (plugin) {
-        discovered.push(plugin);
+        // Prevent duplicate IDs across worktrees/branches
+        if (!discovered.some((d) => d.id === plugin.id)) {
+          discovered.push(plugin);
+        }
       }
     }
 
     // Recurse into subdirectories
     for (const entry of entries) {
       if (entry.isDirectory() && !IGNORED_DIRS.has(entry.name)) {
-        // Skip path if it is inside packages or developer_examples
         const subPath = path.join(currentDir, entry.name);
         const normalized = subPath.replace(/\\/g, '/');
+
+        // Ignore test fixtures, developer examples, and non-wazuh internal plugins
         if (
           normalized.includes('/packages/') ||
           normalized.includes('/developer_examples') ||
-          normalized.includes('/examples/')
+          normalized.includes('/examples/') ||
+          normalized.includes('/test/')
         ) {
           continue;
         }
+
         crawl(subPath, currentDepth + 1);
       }
     }
@@ -95,11 +112,11 @@ function parsePluginDirectory(
   hasPkgJson: boolean
 ): DiscoveredPlugin | null {
   const normalizedPath = pluginDir.replace(/\\/g, '/');
-  // Discard internal shared libraries and developer examples
   if (
     normalizedPath.includes('/packages/') ||
     normalizedPath.includes('/developer_examples') ||
-    normalizedPath.includes('/examples/')
+    normalizedPath.includes('/examples/') ||
+    normalizedPath.includes('/test/')
   ) {
     return null;
   }
@@ -114,7 +131,7 @@ function parsePluginDirectory(
   const optionalPlugins: string[] = [];
   let server = false;
   let ui = false;
-  let isRealPlugin = false;
+  let isExplicitWazuh = false;
 
   // 1. Read opensearch_dashboards.json / kibana.json if present
   if (hasOsdJson) {
@@ -128,7 +145,6 @@ function parsePluginDirectory(
       if (typeof json['id'] === 'string') {
         id = json['id'];
         name = json['id'];
-        isRealPlugin = true;
       }
       if (typeof json['version'] === 'string') version = json['version'];
       if (typeof json['opensearchDashboardsVersion'] === 'string') {
@@ -158,9 +174,8 @@ function parsePluginDirectory(
       const raw = fs.readFileSync(pkgPath, 'utf-8');
       const json = JSON.parse(raw) as Record<string, unknown>;
 
-      // If package has an explicit "wazuh" block or opensearchDashboards config, it's a real plugin
       if (json['wazuh'] && typeof json['wazuh'] === 'object') {
-        isRealPlugin = true;
+        isExplicitWazuh = true;
         const wazuhObj = json['wazuh'] as Record<string, unknown>;
         if (typeof wazuhObj['version'] === 'string') {
           wazuhVersion = wazuhObj['version'];
@@ -168,16 +183,10 @@ function parsePluginDirectory(
       }
 
       if (json['opensearchDashboards'] && typeof json['opensearchDashboards'] === 'object') {
-        isRealPlugin = true;
         const osdObj = json['opensearchDashboards'] as Record<string, unknown>;
         if (typeof osdObj['version'] === 'string') {
           opensearchDashboardsVersion = osdObj['version'];
         }
-      }
-
-      // If it has no plugin manifest and no wazuh/opensearchDashboards block, it is just a plain library
-      if (!hasOsdJson && !isRealPlugin) {
-        return null;
       }
 
       if (typeof json['name'] === 'string') {
@@ -193,30 +202,40 @@ function parsePluginDirectory(
     }
   }
 
-  if (!isRealPlugin) {
+  // Skip root container repositories that aren't individual plugins
+  if (!hasOsdJson && REPO_CONTAINER_NAMES.has(id)) {
     return null;
   }
 
-  // Ignore npm utility scopes (@elastic/..., @osd/..., @babel/...) unless explicitly a wazuh plugin
-  if (
-    id.startsWith('@elastic/') ||
-    id.startsWith('@osd/') ||
-    id.startsWith('@opensearch/') ||
-    id.startsWith('-osd-') ||
-    id.startsWith('-elastic-')
-  ) {
-    return null;
+  // Map AI assistant / chat / agent_traces
+  if (id === 'chat' || id === 'agent_traces' || id.includes('assistant')) {
+    isExplicitWazuh = true;
+    if (id === 'chat') {
+      id = 'wazuh-ai-assistant';
+      name = 'Wazuh AI Assistant';
+      description = 'Generative AI Assistant for alert triage and security queries';
+    } else if (id === 'agent_traces') {
+      name = 'Wazuh Agent Traces';
+    }
   }
 
   const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
   const pluginIdentity = `${cleanId} ${name.toLowerCase()}`;
-  const isWazuh = WAZUH_KEYWORDS.some((kw) => pluginIdentity.includes(kw));
+
+  // STRICT FILTER: Must be explicitly an official Wazuh plugin or AI Assistant
+  const isWazuh =
+    isExplicitWazuh ||
+    WAZUH_OFFICIAL_KEYWORDS.some((kw) => pluginIdentity.includes(kw));
+
+  if (!isWazuh) {
+    return null; // Exclude non-wazuh base OpenSearch plugins
+  }
 
   return {
     id: cleanId,
-    name,
+    name: formatPluginDisplayName(cleanId, name),
     version,
-    description,
+    description: description ?? `${name} for Wazuh Dashboard`,
     wazuhVersion,
     opensearchDashboardsVersion,
     requiredPlugins: [...new Set(requiredPlugins)],
@@ -224,6 +243,29 @@ function parsePluginDirectory(
     server,
     ui,
     sourcePath: pluginDir,
-    category: isWazuh ? 'wazuh' : 'platform',
+    category: 'wazuh',
   };
+}
+
+function formatPluginDisplayName(id: string, rawName: string): string {
+  const map: Record<string, string> = {
+    'wazuh': 'Wazuh App',
+    'wazuhcore': 'Wazuh Core',
+    'wazuhcheckupdates': 'Wazuh Check Updates',
+    'wazuh-security-dashboard-plugin': 'Wazuh Security Plugin',
+    'securitydashboards': 'Wazuh Security Plugin',
+    'wazuh-dashboard-security-analytics': 'Wazuh Security Analytics',
+    'securityanalyticsdashboards': 'Wazuh Security Analytics',
+    'wazuh-dashboard-reporting': 'Wazuh Reporting',
+    'reportsdashboards': 'Wazuh Reporting',
+    'wazuh-dashboard-notifications': 'Wazuh Notifications',
+    'notificationsdashboards': 'Wazuh Notifications',
+    'wazuh-dashboard-alerting': 'Wazuh Alerting',
+    'alertingdashboards': 'Wazuh Alerting',
+    'wazuh-ai-assistant': 'Wazuh AI Assistant',
+    'agent_traces': 'Wazuh Agent Traces',
+    'threat-intel': 'Threat Intelligence Overlay',
+  };
+
+  return map[id] ?? map[rawName] ?? rawName;
 }
