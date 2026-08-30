@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import ForceGraph3D from 'react-force-graph-3d';
+import ForceGraph3D, { type ForceGraphMethods } from 'react-force-graph-3d';
 import type { BrainNode, BrainEdge } from '../types.js';
 
 interface OrbitalMap3DProps {
@@ -29,14 +29,6 @@ interface GraphLinkObject {
   color: string;
 }
 
-interface ForceGraphMethods {
-  cameraPosition: (
-    pos: { x: number; y: number; z: number },
-    lookAt?: { x: number; y: number; z: number } | GraphNodeObject,
-    transitionMs?: number
-  ) => void;
-}
-
 const TYPE_COLORS: Record<string, string> = {
   daemon: '#3b82f6',
   agent: '#10b981',
@@ -53,7 +45,7 @@ export const OrbitalMap3D: React.FC<OrbitalMap3DProps> = ({
   selectedNode,
   onSelectNode,
 }) => {
-  const fgRef = useRef<ForceGraphMethods | null>(null);
+  const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
 
   const graphData: { nodes: GraphNodeObject[]; links: GraphLinkObject[] } = {
     nodes: nodes.map((n) => ({
@@ -82,7 +74,7 @@ export const OrbitalMap3D: React.FC<OrbitalMap3DProps> = ({
         const distRatio = 1 + distance / Math.hypot(node.val, node.val, node.val);
         fgRef.current.cameraPosition(
           { x: node.val * distRatio, y: node.val * distRatio, z: node.val * distRatio },
-          node,
+          { x: node.x ?? 0, y: node.y ?? 0, z: node.z ?? 0 },
           1500
         );
       }
@@ -99,9 +91,7 @@ export const OrbitalMap3D: React.FC<OrbitalMap3DProps> = ({
       </div>
 
       <ForceGraph3D
-        ref={(ref) => {
-          fgRef.current = ref as unknown as ForceGraphMethods | null;
-        }}
+        ref={fgRef}
         graphData={graphData}
         backgroundColor="#0A0A0A"
         nodeLabel={(node) => {
