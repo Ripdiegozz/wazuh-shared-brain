@@ -7,6 +7,7 @@ import { DoctrineGrid } from './components/DoctrineGrid.js';
 import { OrbitalMap3D } from './components/OrbitalMap3D.js';
 import { TerminalInspector } from './components/TerminalInspector.js';
 import { NodeDrawer } from './components/NodeDrawer.js';
+import { IngestModal } from './components/IngestModal.js';
 import type {
   BrainNode,
   BrainEdge,
@@ -23,6 +24,7 @@ export const App: React.FC = () => {
   const [plugins, setPlugins] = useState<BrainPlugin[]>([]);
   const [selectedPlugins, setSelectedPlugins] = useState<string[]>(['threat-intel']);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isIngestOpen, setIsIngestOpen] = useState<boolean>(false);
 
   const [nodes, setNodes] = useState<BrainNode[]>([]);
   const [edges, setEdges] = useState<BrainEdge[]>([]);
@@ -30,27 +32,21 @@ export const App: React.FC = () => {
   const [doctrines, setDoctrines] = useState<BrainDoctrine[]>([]);
   const [selectedNode, setSelectedNode] = useState<BrainNode | null>(null);
 
-  // 1. Fetch versions and plugins
-  useEffect(() => {
+  const reloadData = () => {
+    // 1. Fetch versions and plugins
     fetch('/api/versions')
       .then((res) => res.json())
       .then((data: { versions: BrainVersion[]; plugins: BrainPlugin[] }) => {
         if (Array.isArray(data.versions) && data.versions.length > 0) {
           setVersions(data.versions);
-          if (!data.versions.some((v) => v.id === selectedVersion)) {
-            setSelectedVersion(data.versions[0]?.id ?? 'v4.8');
-          }
         }
         if (Array.isArray(data.plugins)) {
           setPlugins(data.plugins);
         }
       })
       .catch((err) => console.error('Failed to fetch versions:', err));
-  }, []);
 
-  // 2. Fetch graph, rules, and doctrine when version or plugins change
-  useEffect(() => {
-    // Fetch graph
+    // 2. Fetch graph, rules, and doctrine
     fetch(`/api/graph?version=${selectedVersion}`)
       .then((res) => res.json())
       .then((data: { nodes: BrainNode[]; edges: BrainEdge[] }) => {
@@ -59,7 +55,6 @@ export const App: React.FC = () => {
       })
       .catch((err) => console.error('Failed to fetch graph:', err));
 
-    // Fetch rules
     fetch(`/api/rules?version=${selectedVersion}`)
       .then((res) => res.json())
       .then((data: { rules: BrainRule[] }) => {
@@ -67,13 +62,16 @@ export const App: React.FC = () => {
       })
       .catch((err) => console.error('Failed to fetch rules:', err));
 
-    // Fetch doctrine
     fetch(`/api/doctrine?version=${selectedVersion}`)
       .then((res) => res.json())
       .then((data: { doctrines: BrainDoctrine[] }) => {
         setDoctrines(data.doctrines ?? []);
       })
       .catch((err) => console.error('Failed to fetch doctrine:', err));
+  };
+
+  useEffect(() => {
+    reloadData();
   }, [selectedVersion, selectedPlugins]);
 
   const handleTogglePlugin = (pluginId: string) => {
@@ -99,6 +97,7 @@ export const App: React.FC = () => {
         onTogglePlugin={handleTogglePlugin}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onOpenIngest={() => setIsIngestOpen(true)}
         stats={{
           nodesCount: nodes.length,
           edgesCount: edges.length,
@@ -164,6 +163,15 @@ export const App: React.FC = () => {
           onSelectNodeById={handleSelectNodeById}
         />
       </div>
+
+      {/* Ingest Modal */}
+      <IngestModal
+        isOpen={isIngestOpen}
+        onClose={() => setIsIngestOpen(false)}
+        onSuccess={() => {
+          reloadData();
+        }}
+      />
     </div>
   );
 };

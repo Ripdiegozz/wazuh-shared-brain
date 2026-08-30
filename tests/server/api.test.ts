@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { compileBrain } from '../../src/compiler/compiler.js';
 import { createServer, type AppServer } from '../../src/server/api.js';
 import fs from 'node:fs';
+import path from 'node:path';
 
 interface VersionsResponse {
   versions: Array<{ id: string; name: string }>;
@@ -17,12 +18,31 @@ interface GraphResponse {
   edges: Array<{ id: string; source: string; target: string; type: string }>;
 }
 
+interface IngestResponse {
+  ok: boolean;
+  summary: {
+    pluginsDiscovered: number;
+  };
+}
+
 describe('Local REST API Suite', () => {
   const testDbPath = '.cache/test-api-brain.sqlite';
+  const fixtureDir = '.cache/test-api-fixtures';
   let server: AppServer;
   let baseUrl: string;
 
   beforeAll(async () => {
+    if (fs.existsSync(fixtureDir)) fs.rmSync(fixtureDir, { recursive: true, force: true });
+    fs.mkdirSync(path.join(fixtureDir, 'test-plugin'), { recursive: true });
+    fs.writeFileSync(
+      path.join(fixtureDir, 'test-plugin', 'package.json'),
+      JSON.stringify({
+        name: 'wazuh-security-dashboard-plugin',
+        version: '5.0.0',
+        wazuh: { version: '5.0.0' },
+      })
+    );
+
     await compileBrain({ dbPath: testDbPath, rootDir: process.cwd() });
     server = createServer({ dbPath: testDbPath });
     await new Promise<void>((resolve) => {
@@ -39,6 +59,7 @@ describe('Local REST API Suite', () => {
   afterAll(async () => {
     await server.closeServer();
     if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+    if (fs.existsSync(fixtureDir)) fs.rmSync(fixtureDir, { recursive: true, force: true });
   });
 
   it('GET /api/versions returns version metadata', async () => {
@@ -69,5 +90,18 @@ describe('Local REST API Suite', () => {
     expect(res.status).toBe(200);
     const data = (await res.json()) as { results: Array<{ id: string; title: string }> };
     expect(data.results.length).toBeGreaterThan(0);
+  });
+
+  it('POST /api/ingest triggers plugin discovery and auto-compilation', async () => {
+    const res = await fetch(`${baseUrl}/api/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ localDir: fixtureDir }),
+    });
+
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as IngestResponse;
+    expect(data.ok).toBe(true);
+    expect(data.summary.pluginsDiscovered).toBeGreaterThanOrEqual(1);
   });
 });

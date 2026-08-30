@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Layers, Box, Cpu, ShieldAlert, BookOpen, Sparkles } from 'lucide-react';
+import { Search, Layers, Box, Cpu, ShieldAlert, BookOpen, Sparkles, DownloadCloud } from 'lucide-react';
 import type { BrainVersion, BrainPlugin } from '../types.js';
 
 interface NavbarProps {
@@ -11,6 +11,7 @@ interface NavbarProps {
   onTogglePlugin: (pluginId: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onOpenIngest: () => void;
   stats: {
     nodesCount: number;
     edgesCount: number;
@@ -28,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTogglePlugin,
   searchQuery,
   onSearchChange,
+  onOpenIngest,
   stats,
 }) => {
   const currentVersionObj = versions.find((v) => v.id === selectedVersion);
@@ -93,16 +95,27 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
       </div>
 
-      {/* Middle: Search input */}
-      <div className="relative w-80 max-w-sm">
-        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-tertiary" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search rules, nodes, doctrine..."
-          className="w-full bg-canvas text-xs text-ink-primary pl-8 pr-3 py-1.5 rounded border border-border placeholder:text-ink-tertiary outline-none hover:border-border-strong focus:border-white transition-colors"
-        />
+      {/* Middle: Search input & Ingest Button */}
+      <div className="flex items-center gap-2">
+        <div className="relative w-72 max-w-sm">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-tertiary" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search rules, nodes, doctrine..."
+            className="w-full bg-canvas text-xs text-ink-primary pl-8 pr-3 py-1.5 rounded border border-border placeholder:text-ink-tertiary outline-none hover:border-border-strong focus:border-white transition-colors"
+          />
+        </div>
+
+        <button
+          onClick={onOpenIngest}
+          className="h-8 px-2.5 rounded bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+          title="Ingest Wazuh plugins and repositories from local folder or GitHub"
+        >
+          <DownloadCloud className="w-3.5 h-3.5" />
+          <span>Ingest</span>
+        </button>
       </div>
 
       {/* Right: Stats Summary */}

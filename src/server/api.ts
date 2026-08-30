@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type Database from 'better-sqlite3';
 import { openDatabase } from '../compiler/db.js';
+import { ingestWazuhPlugins } from '../ingest/ingestor.js';
 
 export interface ServerOptions {
   dbPath?: string;
@@ -33,6 +34,43 @@ export function createServer(options: ServerOptions = {}): AppServer {
     const parsedUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     const pathname = parsedUrl.pathname;
     const searchParams = parsedUrl.searchParams;
+
+    // 0. POST /api/ingest
+    if (req.method === 'POST' && pathname === '/api/ingest') {
+      let body = '';
+      req.on('data', (chunk: Buffer) => {
+        body += chunk.toString();
+      });
+      req.on('end', async () => {
+        try {
+          const payload = body ? (JSON.parse(body) as Record<string, unknown>) : {};
+          const localDir = typeof payload['localDir'] === 'string' ? payload['localDir'] : undefined;
+          const remote = Boolean(payload['remote']);
+          const githubOrg = typeof payload['githubOrg'] === 'string' ? payload['githubOrg'] : undefined;
+          const repositories = Array.isArray(payload['repositories'])
+            ? payload['repositories'].filter((r): r is string => typeof r === 'string')
+            : undefined;
+          const githubToken = typeof payload['githubToken'] === 'string' ? payload['githubToken'] : undefined;
+
+          const summary = await ingestWazuhPlugins({
+            localDir,
+            remote,
+            githubOrg,
+            repositories,
+            githubToken,
+            compileAfter: true,
+          });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, summary }));
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: message }));
+        }
+      });
+      return;
+    }
 
     // 1. GET /api/versions
     if (pathname === '/api/versions') {
