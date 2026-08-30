@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "wazuh-shared-brain": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tsx",
+        "C:/Users/runner/orca/projects/wazuh-shared-brain/src/cli/index.ts",
+        "mcp"
+      ],
+      "type": "stdio"
+    }
+  }
+}
