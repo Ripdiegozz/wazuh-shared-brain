@@ -156,14 +156,13 @@ export const ColumnMap2D: React.FC<ColumnMap2DProps> = ({
 
           // Apply Wazuh Only filter on plugins column if active
           if (col.key === 'plugin' && wazuhOnlyPlugins) {
-            rawColNodes = rawColNodes.filter((n) =>
-              WAZUH_KEYWORDS.some(
-                (kw) =>
-                  n.id.toLowerCase().includes(kw) ||
-                  n.label.toLowerCase().includes(kw) ||
-                  n.package.toLowerCase().includes(kw)
-              )
-            );
+            rawColNodes = rawColNodes.filter((n) => {
+              const idLower = n.id.toLowerCase();
+              const labelLower = n.label.toLowerCase();
+              return WAZUH_KEYWORDS.some(
+                (kw) => idLower.includes(kw) || labelLower.includes(kw)
+              );
+            });
           }
 
           const filterText = columnFilters[col.key] ?? '';

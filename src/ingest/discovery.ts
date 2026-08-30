@@ -209,8 +209,8 @@ function parsePluginDirectory(
   }
 
   const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
-  const searchCorpus = `${cleanId} ${name.toLowerCase()} ${normalizedPath.toLowerCase()}`;
-  const isWazuh = WAZUH_KEYWORDS.some((kw) => searchCorpus.includes(kw));
+  const pluginIdentity = `${cleanId} ${name.toLowerCase()}`;
+  const isWazuh = WAZUH_KEYWORDS.some((kw) => pluginIdentity.includes(kw));
 
   return {
     id: cleanId,

@@ -95,4 +95,15 @@ export function initSchema(db: Database.Database): void {
       plugin_id
     );
   `);
+
+  // Column migrations for existing databases
+  try {
+    db.exec("ALTER TABLE plugins ADD COLUMN category TEXT NOT NULL DEFAULT 'wazuh'");
+  } catch {}
+  try {
+    db.exec("ALTER TABLE versions ADD COLUMN channel TEXT NOT NULL DEFAULT 'stable'");
+  } catch {}
+  try {
+    db.exec("ALTER TABLE versions ADD COLUMN is_prerelease INTEGER NOT NULL DEFAULT 0");
+  } catch {}
 }
