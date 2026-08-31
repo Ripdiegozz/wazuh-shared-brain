@@ -71,7 +71,7 @@ describe('Universal Ingestion Engine', () => {
 
     expect(summary.pluginsDiscovered).toBe(2);
     expect(summary.nodesGenerated).toBe(2);
-    expect(summary.connectionsGenerated).toBe(3); // 2 required + 1 optional
+    expect(summary.connectionsGenerated).toBe(5); // 2 required + 1 optional + 2 central wazuh hub links
 
     // Verify generated file exists
     const manifestPath = path.join(

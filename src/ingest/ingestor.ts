@@ -82,26 +82,44 @@ export async function ingestWazuhPlugins(options: IngestOptions = {}): Promise<I
       description?: string;
     }> = [];
 
-    for (const req of plugin.requiredPlugins) {
+    // Central Monorepo Hub Link: Connect every extension plugin to the main 'wazuh' app
+    if (plugin.id !== 'wazuh') {
       connections.push({
         from: plugin.id,
-        to: req,
+        to: 'wazuh',
         type: 'DEPENDS_ON',
         weight: 'CRITICAL',
-        description: `Required dashboard plugin dependency: ${req}`,
+        description: `Wazuh Dashboard core plugin integration into main Wazuh App`,
       });
       connectionsGenerated++;
     }
 
+    for (const req of plugin.requiredPlugins) {
+      const cleanReq = req.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      if (cleanReq !== plugin.id) {
+        connections.push({
+          from: plugin.id,
+          to: cleanReq,
+          type: 'DEPENDS_ON',
+          weight: 'CRITICAL',
+          description: `Required dashboard plugin dependency: ${req}`,
+        });
+        connectionsGenerated++;
+      }
+    }
+
     for (const opt of plugin.optionalPlugins) {
-      connections.push({
-        from: plugin.id,
-        to: opt,
-        type: 'DEPENDS_ON',
-        weight: 'OPTIONAL',
-        description: `Optional dashboard plugin integration: ${opt}`,
-      });
-      connectionsGenerated++;
+      const cleanOpt = opt.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      if (cleanOpt !== plugin.id) {
+        connections.push({
+          from: plugin.id,
+          to: cleanOpt,
+          type: 'DEPENDS_ON',
+          weight: 'OPTIONAL',
+          description: `Optional dashboard plugin integration: ${opt}`,
+        });
+        connectionsGenerated++;
+      }
     }
 
     if (connections.length > 0) {
